@@ -1,0 +1,70 @@
+# ================================
+# Stable Diffusion Forge Telegram Bot
+# Конфигурация
+# ================================
+
+# --- Telegram ---
+telegram:
+  token: "YOUR_BOT_TOKEN_HERE"        # Токен от @BotFather
+  admin_id: 123456789                  # Твой Telegram ID (узнать у @userinfobot)
+
+# --- Forge API ---
+forge:
+  url: "http://127.0.0.1:7860"        # Адрес Forge WebUI
+  timeout: 300                         # Таймаут генерации (секунды)
+
+# --- Лимиты пользователей ---
+limits:
+  daily_requests: 10                   # Запросов в день на пользователя
+  max_queue: 3                         # Максимум запросов в очереди
+
+# --- Галерея ---
+gallery:
+  save_path: "./gallery"               # Папка для сохранения на ПК
+  send_to_chat: true                   # Отправлять в чат
+
+# --- Параметры генерации по умолчанию ---
+defaults:
+  steps: 25
+  cfg_scale: 7.0
+  width: 512
+  height: 768
+  sampler: "Euler a"
+  scheduler: "Karras"
+  negative_prompt: "worst quality, low quality, bad anatomy, bad hands, text, watermark"
+  batch_size: 1
+
+# --- Доступные параметры ---
+options:
+  samplers:
+    - "Euler a"
+    - "Euler"
+    - "DPM++ 2M"
+    - "DPM++ 2M Karras"
+    - "DPM++ SDE"
+    - "DPM++ SDE Karras"
+    - "DDIM"
+    - "UniPC"
+
+  schedulers:
+    - "Karras"
+    - "Exponential"
+    - "Polyexponential"
+    - "SGM Uniform"
+    - "Simple"
+
+  sizes:
+    - "512x512"
+    - "512x768"
+    - "768x512"
+    - "768x1024"
+    - "1024x768"
+    - "1024x1024"
+
+  steps_range:
+    min: 5
+    max: 80
+
+  cfg_range:
+    min: 1.0
+    max: 20.0
