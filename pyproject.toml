@@ -1,0 +1,33 @@
+[project]
+name = "sd-forge-bot"
+version = "1.0.0"
+description = "Telegram-бот для генерации изображений через Stable Diffusion Forge"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "python-telegram-bot==20.7",
+    "aiohttp==3.9.1",
+    "pyyaml==6.0.1",
+    "aiosqlite==0.19.0",
+    "Pillow==10.1.0",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "W",   # pycodestyle warnings
+]
+ignore = [
+    "E501",  # длинные строки контролирует formatter
+]
+
+[tool.ruff.format]
+quote-style = "double"

@@ -1,7 +1,7 @@
-import aiohttp
 import base64
 import json
-from typing import Dict, List, Optional, Tuple
+
+import aiohttp
 
 
 class ForgeAPI:
@@ -9,12 +9,12 @@ class ForgeAPI:
         self.base_url = base_url.rstrip("/")
         self.timeout = aiohttp.ClientTimeout(total=timeout)
 
-    async def _get(self, endpoint: str) -> Dict:
+    async def _get(self, endpoint: str) -> dict:
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
             async with session.get(f"{self.base_url}{endpoint}") as resp:
                 return await resp.json()
 
-    async def _post(self, endpoint: str, data: Dict) -> Dict:
+    async def _post(self, endpoint: str, data: dict) -> dict:
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
             async with session.post(
                 f"{self.base_url}{endpoint}",
@@ -31,7 +31,7 @@ class ForgeAPI:
         except Exception:
             return False
 
-    async def get_models(self) -> List[Dict]:
+    async def get_models(self) -> list[dict]:
         """Список доступных моделей"""
         try:
             models = await self._get("/sdapi/v1/sd-models")
@@ -55,7 +55,7 @@ class ForgeAPI:
         except Exception:
             return False
 
-    async def get_loras(self) -> List[Dict]:
+    async def get_loras(self) -> list[dict]:
         """Список доступных LoRA"""
         try:
             loras = await self._get("/sdapi/v1/loras")
@@ -63,7 +63,7 @@ class ForgeAPI:
         except Exception:
             return []
 
-    async def get_samplers(self) -> List[str]:
+    async def get_samplers(self) -> list[str]:
         """Список доступных сэмплеров"""
         try:
             samplers = await self._get("/sdapi/v1/samplers")
@@ -71,7 +71,7 @@ class ForgeAPI:
         except Exception:
             return []
 
-    async def get_schedulers(self) -> List[str]:
+    async def get_schedulers(self) -> list[str]:
         """Список доступных планировщиков"""
         try:
             schedulers = await self._get("/sdapi/v1/schedulers")
@@ -79,7 +79,7 @@ class ForgeAPI:
         except Exception:
             return []
 
-    async def get_upscalers(self) -> List[str]:
+    async def get_upscalers(self) -> list[str]:
         """Список апскейлеров"""
         try:
             upscalers = await self._get("/sdapi/v1/upscalers")
@@ -87,7 +87,7 @@ class ForgeAPI:
         except Exception:
             return []
 
-    async def get_progress(self) -> Dict:
+    async def get_progress(self) -> dict:
         """Прогресс текущей генерации"""
         try:
             return await self._get("/sdapi/v1/progress")
@@ -102,7 +102,7 @@ class ForgeAPI:
         except Exception:
             return False
 
-    async def txt2img(self, params: Dict) -> Tuple[Optional[bytes], Dict]:
+    async def txt2img(self, params: dict) -> tuple[bytes | None, dict]:
         """
         Генерация текст → изображение
         Возвращает (bytes изображения, инфо словарь)
@@ -147,7 +147,7 @@ class ForgeAPI:
 
         return img_bytes, info
 
-    async def img2img(self, image_bytes: bytes, params: Dict) -> Tuple[Optional[bytes], Dict]:
+    async def img2img(self, image_bytes: bytes, params: dict) -> tuple[bytes | None, dict]:
         """
         Генерация изображение → изображение
         """
@@ -188,7 +188,7 @@ class ForgeAPI:
 
         return img_bytes, info
 
-    async def upscale(self, image_bytes: bytes, upscaler: str = "R-ESRGAN 4x+", scale: float = 2.0) -> Optional[bytes]:
+    async def upscale(self, image_bytes: bytes, upscaler: str = "R-ESRGAN 4x+", scale: float = 2.0) -> bytes | None:
         """Апскейл изображения"""
         image_b64 = base64.b64encode(image_bytes).decode("utf-8")
         payload = {
@@ -206,7 +206,7 @@ class ForgeAPI:
             pass
         return None
 
-    async def get_embeddings(self) -> List[str]:
+    async def get_embeddings(self) -> list[str]:
         """Список доступных embeddings/textual inversions"""
         try:
             result = await self._get("/sdapi/v1/embeddings")
@@ -215,7 +215,7 @@ class ForgeAPI:
         except Exception:
             return []
 
-    async def png_info(self, image_bytes: bytes) -> Dict:
+    async def png_info(self, image_bytes: bytes) -> dict:
         """Получить метаданные PNG (параметры генерации)"""
         image_b64 = base64.b64encode(image_bytes).decode("utf-8")
         try:

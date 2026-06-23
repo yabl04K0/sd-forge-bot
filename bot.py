@@ -1,27 +1,39 @@
-import asyncio
-import logging
-import os
 import io
-import yaml
+import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional
 
-from telegram import Update, InputMediaPhoto, InlineKeyboardMarkup
-from telegram.ext import (
-    Application, CommandHandler, MessageHandler, CallbackQueryHandler,
-    ContextTypes, filters, ConversationHandler,
-)
+import yaml
+from telegram import InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
-
-from forge_api import ForgeAPI
-from database import (
-    init_db, register_user, get_user_request_count, increment_user_requests,
-    is_user_banned, ban_user, unban_user, set_user_limit, get_user_limit,
-    get_all_users, get_user_settings, update_user_setting,
-    save_to_gallery, get_user_gallery, get_total_stats,
+from telegram.ext import (
+    Application,
+    CallbackQueryHandler,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
 )
+
 import keyboards as kb
+from database import (
+    ban_user,
+    get_all_users,
+    get_total_stats,
+    get_user_gallery,
+    get_user_limit,
+    get_user_request_count,
+    get_user_settings,
+    increment_user_requests,
+    init_db,
+    is_user_banned,
+    register_user,
+    save_to_gallery,
+    set_user_limit,
+    unban_user,
+    update_user_setting,
+)
+from forge_api import ForgeAPI
 
 # ── Logging ─────────────────────────────────────────────────
 logging.basicConfig(
@@ -42,8 +54,8 @@ WAITING_LIMIT_ID = 8
 WAITING_LIMIT_VALUE = 9
 
 # ── Конфиг ──────────────────────────────────────────────────
-def load_config() -> Dict:
-    with open("config.yaml", "r", encoding="utf-8") as f:
+def load_config() -> dict:
+    with open("config.yaml", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 CONFIG = load_config()
@@ -53,9 +65,9 @@ GALLERY_PATH = Path(CONFIG["gallery"]["save_path"])
 GALLERY_PATH.mkdir(parents=True, exist_ok=True)
 
 # Временное хранилище для img2img
-user_img2img_data: Dict[int, bytes] = {}
-user_last_params: Dict[int, Dict] = {}
-user_last_image: Dict[int, bytes] = {}
+user_img2img_data: dict[int, bytes] = {}
+user_last_params: dict[int, dict] = {}
+user_last_image: dict[int, bytes] = {}
 
 
 # ── Утилиты ─────────────────────────────────────────────────
@@ -72,7 +84,7 @@ async def check_limits(user_id: int) -> tuple[bool, int, int]:
     return used < limit, used, limit
 
 
-def format_params(settings: Dict, prompt: str) -> str:
+def format_params(settings: dict, prompt: str) -> str:
     lora_info = f"\n🎭 LoRA: `{settings.get('selected_lora', 'нет')}` ({settings.get('lora_weight', 0.8)})" if settings.get('selected_lora') else ""
     return (
         f"📝 *Промпт:* `{prompt[:200]}`\n"
@@ -83,7 +95,7 @@ def format_params(settings: Dict, prompt: str) -> str:
     )
 
 
-async def merge_settings_with_defaults(user_id: int) -> Dict:
+async def merge_settings_with_defaults(user_id: int) -> dict:
     """Получить настройки пользователя с дефолтами"""
     settings = await get_user_settings(user_id)
     defaults = CONFIG["defaults"]
@@ -372,7 +384,6 @@ async def lora_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def model_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    user_id = query.from_user.id
     data = query.data
 
     if data.startswith("model_"):
@@ -392,7 +403,7 @@ async def model_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ── Генерация ────────────────────────────────────────────────
-async def generate_image(update: Update, context: ContextTypes.DEFAULT_TYPE, prompt: str, img_bytes: Optional[bytes] = None):
+async def generate_image(update: Update, context: ContextTypes.DEFAULT_TYPE, prompt: str, img_bytes: bytes | None = None):
     """Основная функция генерации"""
     user_id = update.effective_user.id
 

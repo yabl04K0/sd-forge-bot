@@ -1,5 +1,5 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
-from typing import List, Dict, Optional
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 
 # ── Главное меню ────────────────────────────────────────────
@@ -45,8 +45,7 @@ def admin_menu() -> InlineKeyboardMarkup:
 
 
 # ── Меню настроек ───────────────────────────────────────────
-def settings_menu(settings: Dict) -> InlineKeyboardMarkup:
-    lora_label = f"🎭 LoRA: {settings.get('selected_lora', 'нет')[:12]}" if settings.get('selected_lora') else "🎭 LoRA: нет"
+def settings_menu(settings: dict) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
         [
             InlineKeyboardButton(f"🔢 Steps: {settings.get('steps', 25)}", callback_data="set_steps"),
@@ -54,10 +53,10 @@ def settings_menu(settings: Dict) -> InlineKeyboardMarkup:
         ],
         [
             InlineKeyboardButton(f"📐 Размер: {settings.get('width', 512)}x{settings.get('height', 768)}", callback_data="set_size"),
-            InlineKeyboardButton(f"🔀 Sampler", callback_data="set_sampler"),
+            InlineKeyboardButton("🔀 Sampler", callback_data="set_sampler"),
         ],
         [
-            InlineKeyboardButton(f"📅 Scheduler", callback_data="set_scheduler"),
+            InlineKeyboardButton("📅 Scheduler", callback_data="set_scheduler"),
             InlineKeyboardButton(f"⚖️ LoRA вес: {settings.get('lora_weight', 0.8)}", callback_data="set_lora_weight"),
         ],
         [
@@ -128,7 +127,7 @@ def size_menu() -> InlineKeyboardMarkup:
 
 
 # ── Выбор сэмплера ──────────────────────────────────────────
-def sampler_menu(samplers: List[str]) -> InlineKeyboardMarkup:
+def sampler_menu(samplers: list[str]) -> InlineKeyboardMarkup:
     rows = []
     for s in samplers[:20]:
         rows.append([InlineKeyboardButton(s, callback_data=f"sampler_{s[:40]}")])
@@ -137,7 +136,7 @@ def sampler_menu(samplers: List[str]) -> InlineKeyboardMarkup:
 
 
 # ── Выбор шедулера ──────────────────────────────────────────
-def scheduler_menu(schedulers: List[str]) -> InlineKeyboardMarkup:
+def scheduler_menu(schedulers: list[str]) -> InlineKeyboardMarkup:
     rows = []
     for s in schedulers[:15]:
         rows.append([InlineKeyboardButton(s, callback_data=f"scheduler_{s[:40]}")])
@@ -146,7 +145,7 @@ def scheduler_menu(schedulers: List[str]) -> InlineKeyboardMarkup:
 
 
 # ── Выбор LoRA ──────────────────────────────────────────────
-def lora_menu(loras: List[Dict], current_lora: Optional[str] = None) -> InlineKeyboardMarkup:
+def lora_menu(loras: list[dict], current_lora: str | None = None) -> InlineKeyboardMarkup:
     rows = []
     # Кнопка "без LoRA"
     no_lora_label = "✅ Без LoRA" if not current_lora else "❌ Без LoRA"
@@ -178,7 +177,7 @@ def lora_weight_menu() -> InlineKeyboardMarkup:
 
 
 # ── Выбор модели ────────────────────────────────────────────
-def model_menu(models: List[Dict], current_model: str) -> InlineKeyboardMarkup:
+def model_menu(models: list[dict], current_model: str) -> InlineKeyboardMarkup:
     rows = []
     for model in models[:20]:
         name = model.get("model_name", model.get("title", "unknown"))
@@ -246,7 +245,7 @@ def admin_panel_menu() -> InlineKeyboardMarkup:
 
 
 # ── Выбор апскейлера ────────────────────────────────────────
-def upscaler_menu(upscalers: List[str]) -> InlineKeyboardMarkup:
+def upscaler_menu(upscalers: list[str]) -> InlineKeyboardMarkup:
     rows = []
     scales = [
         InlineKeyboardButton("x1.5", callback_data="upscale_1.5"),

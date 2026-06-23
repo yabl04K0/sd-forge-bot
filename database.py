@@ -1,8 +1,6 @@
-import aiosqlite
-import asyncio
-from datetime import date, datetime
-from typing import Optional, List, Dict
+from datetime import date
 
+import aiosqlite
 
 DB_PATH = "bot.db"
 
@@ -132,7 +130,7 @@ async def get_user_limit(user_id: int, default_limit: int) -> int:
             return default_limit
 
 
-async def get_all_users() -> List[Dict]:
+async def get_all_users() -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM users") as cursor:
@@ -140,7 +138,7 @@ async def get_all_users() -> List[Dict]:
             return [dict(row) for row in rows]
 
 
-async def get_user_settings(user_id: int) -> Dict:
+async def get_user_settings(user_id: int) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM user_settings WHERE user_id = ?", (user_id,)) as cursor:
@@ -159,10 +157,10 @@ async def update_user_setting(user_id: int, key: str, value):
         await db.commit()
 
 
-async def save_to_gallery(user_id: int, file_path: str, params: Dict):
+async def save_to_gallery(user_id: int, file_path: str, params: dict):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
-            INSERT INTO gallery 
+            INSERT INTO gallery
             (user_id, file_path, prompt, negative_prompt, model, lora, steps, cfg, sampler, seed, width, height)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
@@ -181,7 +179,7 @@ async def save_to_gallery(user_id: int, file_path: str, params: Dict):
         await db.commit()
 
 
-async def get_user_gallery(user_id: int, limit: int = 20) -> List[Dict]:
+async def get_user_gallery(user_id: int, limit: int = 20) -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("""
@@ -191,7 +189,7 @@ async def get_user_gallery(user_id: int, limit: int = 20) -> List[Dict]:
             return [dict(row) for row in rows]
 
 
-async def get_total_stats() -> Dict:
+async def get_total_stats() -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
         today = date.today().isoformat()
         async with db.execute("SELECT COUNT(*) FROM users") as c:
