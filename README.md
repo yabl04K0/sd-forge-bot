@@ -46,6 +46,10 @@ python launch.py --api
 ---
 
 ### 4. Настрой config.yaml
+Скопируй шаблон и впиши свои данные (реальный `config.yaml` в `.gitignore` — токен не попадёт в git):
+```bash
+cp config.example.yaml config.yaml
+```
 ```yaml
 telegram:
   token: "1234567890:ABCdef..."  # вставь свой токен
@@ -78,10 +82,23 @@ sd_forge_bot/
 ├── forge_api.py    # Клиент Forge API
 ├── database.py     # База данных (SQLite)
 ├── keyboards.py    # Кнопки и меню
-├── config.yaml     # Конфигурация
+├── config.example.yaml  # Шаблон конфигурации (копируется в config.yaml)
 ├── requirements.txt
-├── gallery/        # Папка с сохранёнными изображениями
-└── bot.db          # База данных (создаётся автоматически)
+├── requirements-dev.txt # Зависимости для разработки (ruff)
+├── pyproject.toml       # Метаданные проекта и настройки ruff
+├── .github/workflows/ci.yml  # CI: lint + compile
+├── gallery/        # Папка с сохранёнными изображениями (gitignore)
+└── bot.db          # База данных (создаётся автоматически, gitignore)
+```
+
+---
+
+## Разработка
+```bash
+pip install -r requirements-dev.txt
+ruff check .          # линтер
+ruff check --fix .    # автоисправление
+ruff format .         # форматирование
 ```
 
 ---
