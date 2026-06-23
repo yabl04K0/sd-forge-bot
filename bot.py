@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 import yaml
-from telegram import InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
@@ -403,7 +403,7 @@ async def model_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ── Генерация ────────────────────────────────────────────────
-async def generate_image(update: Update, context: ContextTypes.DEFAULT_TYPE, prompt: str, img_bytes: bytes | None = None):
+async def generate_image(update: Update, context: ContextTypes.DEFAULT_TYPE, prompt: str, img_bytes: bytes | None = None, seed: int | None = None):
     """Основная функция генерации"""
     user_id = update.effective_user.id
 
@@ -413,8 +413,11 @@ async def generate_image(update: Update, context: ContextTypes.DEFAULT_TYPE, pro
         text = f"⛔ Лимит исчерпан: `{used}/{limit}` запросов сегодня."
         if update.message:
             await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
-        elif update.callback_query:
-            await update.callback_query.edit_message_text(text, parse_mode=ParseMode.MARKDOWN)
+        else:
+            # Из инлайн-кнопки на фото-сообщении — шлём новое сообщение, не редактируем фото.
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id, text=text, parse_mode=ParseMode.MARKDOWN
+            )
         return
 
     # Проверка бана
@@ -424,15 +427,16 @@ async def generate_image(update: Update, context: ContextTypes.DEFAULT_TYPE, pro
     # Получить настройки
     settings = await merge_settings_with_defaults(user_id)
 
-    # Парсинг seed из промпта
-    seed = -1
-    if "--seed" in prompt:
-        parts = prompt.split("--seed")
-        prompt = parts[0].strip()
-        try:
-            seed = int(parts[1].strip().split()[0])
-        except Exception:
-            seed = -1
+    # Парсинг seed из промпта (если seed не задан явно вызывающим кодом)
+    if seed is None:
+        seed = -1
+        if "--seed" in prompt:
+            parts = prompt.split("--seed")
+            prompt = parts[0].strip()
+            try:
+                seed = int(parts[1].strip().split()[0])
+            except Exception:
+                seed = -1
 
     settings["prompt"] = prompt
     settings["seed"] = seed
@@ -442,7 +446,13 @@ async def generate_image(update: Update, context: ContextTypes.DEFAULT_TYPE, pro
     if update.message:
         status_msg = await update.message.reply_text(status_text, parse_mode=ParseMode.MARKDOWN)
     else:
-        status_msg = await update.callback_query.edit_message_text(status_text, parse_mode=ParseMode.MARKDOWN)
+        # Вызов из инлайн-кнопки: кнопки висят на фото-сообщении (caption, не text),
+        # его нельзя редактировать как текст — шлём новое статус-сообщение.
+        status_msg = await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=status_text,
+            parse_mode=ParseMode.MARKDOWN,
+        )
 
     try:
         if img_bytes:
@@ -510,8 +520,7 @@ async def after_gen_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
         if not params:
             await query.edit_message_text("❌ Нет данных для повтора.", reply_markup=kb.back_keyboard())
             return
-        params["seed"] = -1
-        await generate_image(update, context, params.get("prompt", ""))
+        await generate_image(update, context, params.get("prompt", ""), seed=-1)
 
     elif data.startswith("gen_same_seed_"):
         seed = int(data.split("_")[-1])
@@ -519,8 +528,7 @@ async def after_gen_callback(update: Update, context: ContextTypes.DEFAULT_TYPE)
         if not params:
             await query.edit_message_text("❌ Нет данных.", reply_markup=kb.back_keyboard())
             return
-        params["seed"] = seed
-        await generate_image(update, context, params.get("prompt", ""))
+        await generate_image(update, context, params.get("prompt", ""), seed=seed)
 
     elif data == "gen_img2img":
         last_img = user_last_image.get(user_id)
@@ -732,13 +740,28 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode=ParseMode.MARKDOWN
             )
         else:
+            user_img2img_data[user_id] = img_bytes
             await update.message.reply_text(
                 "📸 Отправь это фото для img2img?",
                 reply_markup=InlineKeyboardMarkup([
-                    [{"text": "✅ Да", "callback_data": "start_img2img_from_photo"}]
+                    [InlineKeyboardButton("✅ Да", callback_data="start_img2img_from_photo")]
                 ])
             )
-            user_img2img_data[user_id] = img_bytes
+
+
+async def start_img2img_from_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Подтверждение img2img по ранее присланному фото."""
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    if not user_img2img_data.get(user_id):
+        await query.edit_message_text("❌ Изображение не найдено. Пришли фото заново.")
+        return
+    await query.edit_message_text(
+        "✏️ Введи промпт для img2img:",
+        reply_markup=kb.cancel_keyboard()
+    )
+    context.user_data["state"] = WAITING_IMG2IMG_PROMPT
 
 
 # ── Адмнин callbacks ─────────────────────────────────────────
@@ -896,6 +919,7 @@ def main():
     app.add_handler(CallbackQueryHandler(after_gen_callback, pattern="^gen_"))
     app.add_handler(CallbackQueryHandler(upscale_callback, pattern="^upscale_"))
     app.add_handler(CallbackQueryHandler(gallery_callback, pattern="^gallery_"))
+    app.add_handler(CallbackQueryHandler(start_img2img_from_photo, pattern="^start_img2img_from_photo$"))
     app.add_handler(CallbackQueryHandler(admin_callback, pattern="^admin_"))
 
     # Сообщения
