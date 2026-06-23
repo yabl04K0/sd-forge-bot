@@ -12,6 +12,7 @@ class ForgeAPI:
     async def _get(self, endpoint: str) -> dict:
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
             async with session.get(f"{self.base_url}{endpoint}") as resp:
+                resp.raise_for_status()
                 return await resp.json()
 
     async def _post(self, endpoint: str, data: dict) -> dict:
@@ -21,6 +22,7 @@ class ForgeAPI:
                 json=data,
                 headers={"Content-Type": "application/json"}
             ) as resp:
+                resp.raise_for_status()
                 return await resp.json()
 
     async def check_connection(self) -> bool:

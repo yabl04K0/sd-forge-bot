@@ -75,6 +75,18 @@ def is_admin(user_id: int) -> bool:
     return user_id == ADMIN_ID
 
 
+def resolve_full_name(prefix: str, candidates: list[str]) -> str:
+    """callback_data обрезается до 40 символов (лимит Telegram 64 байта).
+    Восстановить полное имя по обрезанному префиксу."""
+    for c in candidates:
+        if c == prefix:
+            return c
+    for c in candidates:
+        if c.startswith(prefix):
+            return c
+    return prefix
+
+
 async def check_limits(user_id: int) -> tuple[bool, int, int]:
     """Проверка лимитов. Возвращает (ok, использовано, лимит)"""
     if is_admin(user_id):
@@ -372,8 +384,10 @@ async def lora_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data.startswith("lora_select_"):
         lora_name = data[12:]
-        await update_user_setting(user_id, "selected_lora", lora_name)
         loras = await forge.get_loras()
+        names = [lora.get("name") or lora.get("alias") or "unknown" for lora in loras]
+        lora_name = resolve_full_name(lora_name, names)
+        await update_user_setting(user_id, "selected_lora", lora_name)
         await query.edit_message_text(
             f"✅ LoRA выбрана: `{lora_name}`",
             parse_mode=ParseMode.MARKDOWN,
@@ -388,6 +402,9 @@ async def model_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data.startswith("model_"):
         model_name = data[6:]
+        models = await forge.get_models()
+        names = [m.get("model_name") or m.get("title") or "unknown" for m in models]
+        model_name = resolve_full_name(model_name, names)
         msg = await query.edit_message_text(f"⏳ Загружаю модель `{model_name}`...", parse_mode=ParseMode.MARKDOWN)
         success = await forge.set_model(model_name)
         if success:
@@ -749,6 +766,20 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
 
+async def skip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """/skip в режиме img2img — генерировать с тем же промптом, что и в прошлый раз."""
+    if context.user_data.get("state") != WAITING_IMG2IMG_PROMPT:
+        return
+    context.user_data.pop("state", None)
+    user_id = update.effective_user.id
+    img_bytes = user_img2img_data.get(user_id)
+    if not img_bytes:
+        await update.message.reply_text("❌ Изображение не найдено.")
+        return
+    prompt = user_last_params.get(user_id, {}).get("prompt", "")
+    await generate_image(update, context, prompt, img_bytes=img_bytes)
+
+
 async def start_img2img_from_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Подтверждение img2img по ранее присланному фото."""
     query = update.callback_query
@@ -910,6 +941,7 @@ def main():
     app.add_handler(CommandHandler("lora", lora_command))
     app.add_handler(CommandHandler("gallery", gallery_command))
     app.add_handler(CommandHandler("model", model_command))
+    app.add_handler(CommandHandler("skip", skip_command))
 
     # Callbacks
     app.add_handler(CallbackQueryHandler(menu_callback, pattern="^menu_"))

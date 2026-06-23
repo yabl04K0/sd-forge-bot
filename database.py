@@ -168,7 +168,7 @@ async def save_to_gallery(user_id: int, file_path: str, params: dict):
             params.get("prompt", ""),
             params.get("negative_prompt", ""),
             params.get("model", ""),
-            params.get("lora", ""),
+            params.get("lora") or params.get("selected_lora") or "",
             params.get("steps", 25),
             params.get("cfg_scale", 7.0),
             params.get("sampler", ""),
